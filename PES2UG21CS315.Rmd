@@ -1,0 +1,191 @@
+---
+title: "LAB_1"
+author: "NAGAVENI_LG_PES2UG21CS315"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+
+```{r}
+cat("hey","there",sep="\n")
+```
+```{r}
+
+vector_a<-c(10,20,30,40)
+cat("vector_a:",vector_a,"vector_a's class:",class(vector_a),"length of vector_a:",length(vector_a),"\n")
+
+```
+
+```{r}
+vector_b<-c("Data analytics","R","Python")
+cat("vector_b :",vector_b,"vector_b's class :",class(vector_b),"length of vector_b :",length(vector_b),"\n")
+```
+
+
+```{r}
+#for LOOP
+a <- seq(1,10)
+for(digit in  a){
+  print( digit)
+}
+```
+
+
+
+
+```{r}
+a<-20
+ifelse(a%%2,"Number is odd","Number is even")
+
+```
+
+
+```{r}
+isEven<-function(a){
+  if(a%%2){
+    print("Number is odd")
+  }
+  else{
+    print ("Number is even")
+  }
+}
+isEven(7)
+isEven(40)
+
+```
+
+
+```{r}
+#Installing and loading packages 
+library(ggplot2)
+search()
+```
+
+
+```{r}
+#Loading a dataframe
+data("txhousing")
+df<-txhousing
+head(df)
+#df<-read.csv()
+
+```
+
+
+```{r}
+#viwing dataset
+head(df)
+```
+
+
+
+```{r}
+tail(df)
+```
+
+
+
+
+```{r}
+#Slicing
+top2<-df[1:2,]
+top2
+```
+
+
+```{r}
+#selecting a single column
+cities<-df$city
+cities2<-df[,"city"]
+cities[1:10]
+
+```
+
+
+
+```{r}
+head(cities2)
+```
+
+```{r}
+#preliminary analysis
+mean(df$sales,na.rm=TRUE)
+```
+
+
+```{r}
+median(df$sales,na.rm=TRUE)
+```
+
+
+```{r}
+max(df$sales,na.rm=TRUE)
+```
+
+
+```{r}
+quantile(df$sales,na.rm=TRUE)
+```
+
+
+```{r}
+min(df$sales,na.rm=TRUE)
+```
+
+```{r}
+sortdf<-df[order(df$sales,decreasing = TRUE),]
+head(sortdf)
+```
+```{r}
+#visualization
+x<-c(5,7,8,7,2,2,9,4,11,12,9,6)
+y<-c(99,86,87,88,111,103,87,94,78,77,85,86)
+plot(x,y,main="This is the title:",xlab="Label for x axis",ylab="Label for y axis")
+```
+```{r}
+#bar plot
+x<-c("rcb","mi","csk","kkr")
+y<-c(5,4,3,2)
+barplot(y,names.arg=x,col=c("red","blue","yellow","purple"),main="successful IPL teams")
+```
+
+
+
+
+```{r}
+selected_cities<-c("Dallas","Houston","Austin","san Antonio","Fort Worth")
+subset_txhousing<-df[df$city %in% selected_cities,]
+ggplot(subset_txhousing,aes(x=city,y=sales))+
+  geom_bar(stat="summary",fun="sum" , fill="steelblue")+
+  labs(x='City',y="Total Sales",title="Total Sales By City")
+
+```
+```{r}
+#correlation
+correlation<-cor(df$sales,df$listings,use="complete.obs")
+print(correlation)
+```
+
+```{r}
+#Covariance
+covariance<-cov(df$sales,df$listings,use="complete.obs")
+print(covariance)
+```
+
+```{r}
+#Anova 1D
+anova_result<-aov(sales ~ city ,data=df)
+summary(anova_result)
+```
+```{r}
+
+
+```
+

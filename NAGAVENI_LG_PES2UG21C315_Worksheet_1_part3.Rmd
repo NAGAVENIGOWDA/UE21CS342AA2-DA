@@ -1,0 +1,293 @@
+---
+title: "PES2UG21CS315_Worksheet1_part3"
+author: "NAGAVENI_LG_PES2UG21CS315"
+date: "2023-09-07"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+One Way Anova:
+
+```{r}
+
+library(readxl)
+
+data <- read_excel("C:/Users/Praka/OneDrive/Documents/5thSem/DA/students.xlsx")
+str(data)
+```
+
+```{r}
+# Install and load necessary packages
+if (!requireNamespace("tidyverse", quietly = TRUE)) {
+install.packages("tidyverse")
+}
+if (!requireNamespace("moments", quietly = TRUE)) {
+install.packages("moments")
+}
+library(tidyverse)
+```
+```{r}
+library(moments)
+```
+Problem 1:
+
+Read the data set and display the box plot for each of the fitness plans A, B, C, D. Analyze the box plot for outliers.
+
+```{r}
+library(ggplot2)
+
+boxplot(data$A, data$B, data$C, data$D, 
+ names = c("A", "B", "C", "D"),
+ main = "Box Plots for Fitness Plans A, B, C, D",
+ xlab = "Fitness Plans",
+ ylab = "Data Value")
+
+```
+
+
+There is one observable outlier in fitness plan A and no outliers in B,C,D
+
+Problem 2:
+
+Is the data symmetrical or skewed for each group? Verify the normality assumption for ANOVA. (Hint: Find the Pearson’s moment coefficient of
+skewness and justify it with probability distribution function plot or you can also plot the Q-Q plot)
+
+```{r}
+library(e1071)
+```
+```{r}
+skewness_A <- skewness(data$A)
+skewness_B <- skewness(data$B)
+skewness_C <- skewness(data$C)
+skewness_D <- skewness(data$D)
+cat("Skewness for Group A:", skewness_A, "\n")
+```
+```{r}
+cat("Skewness for Group B:", skewness_B, "\n")
+```
+```{r}
+cat("Skewness for Group C:", skewness_C, "\n")
+
+```
+```{r}
+cat("Skewness for Group D:", skewness_D, "\n")
+
+```
+
+```{r}
+#Q-Q plot for Group A
+qqnorm(data$A)
+qqline(data$A, col = 2)
+
+```
+
+
+```{r}
+#Q-Q plot for Group B
+qqnorm(data$B)
+qqline(data$B, col = 4)
+```
+
+```{r}
+#Q-Q plot for Group C
+qqnorm(data$C)
+qqline(data$C, col = 7)
+```
+```{r}
+#Q-Q plot for Group D
+qqnorm(data$D)
+qqline(data$D, col = 5)
+```
+
+We can conclude from the abovec result that the data for all groups are skewed and not symmetrical. Skewness for Group B: 0.009463167 is the least here.
+
+Problem 3:
+Is there any evidence to suggest a difference in the average marks obtained by students under different fitness plans? Explain what test are you using and why ? Define the hypothesis and the steps of testing. What does the output of this test signify ? (Note: Assume the significance level to be 0.05 
+
+One way Anova test is used.
+
+Step 1: Define Hypotheses Null Hypothesis (H0): There is no significant difference in the average marks obtained by students under different fitness plans (i.e., μA = μB = μC = μD). Alternative Hypothesis (Ha): There is a significant difference in the average marks obtained by students
+under different fitness plans (i.e., at least one pair of means is different).
+
+Step 2: Set the Significance Level Significance level is 0.05
+
+Step 3: Perform the ANOVA Test aov function is used in R for the ANOVA test.
+
+Step 4: Based on output i)If the p-value is less than α (e.g., p < 0.05), you would reject the null hypothesis (H0) and conclude that there is a significant difference in the average marks obtained by students under different fitness plans. ii)If the p-value is greater than or equal to α (e.g., p ≥ 0.05), you would fail to reject the null hypothesis, and you do not have sufficient evidence to conclude that there is a significant difference among the fitness plans.
+
+
+```{r}
+library(reshape2)
+```
+```{r}
+data_long <- melt(data)
+```
+
+```{r}
+colnames(data_long) <- c("FitnessPlan", "Marks")
+model <- aov(Marks ~ FitnessPlan, data = data_long)
+anova_result <- summary(model)
+print(anova_result)
+
+```
+We can see that the F-value here is 7.287 and the p value respectively is 9.1*10^(-5) Fcritical for alpha=0.05 is 3.101
+Fstatistic>Fcritical and (p value)<(alpha value) Therefore we reject the null hypothesis and conclude that there is a significant difference in the average marks obtained by students under different
+fitness plans.
+
+Two way ANOVA:
+
+
+Problem 4:
+Which specific task exhibits the lowest average training time? Does the combination of different treats and tasks significantly influence the training time for pets?
+
+ANOVA for “Task”:
+
+Null Hypothesis (H0): There is no significant difference in the mean ResponseTime across different tasks. 
+Alternative Hypothesis (Ha): There is a significant difference in the mean ResponseTime across different tasks
+
+ANOVA for “Treat”:
+Null Hypothesis (H0): There is no significant difference in the mean ResponseTime across different treats.
+Alternative Hypothesis (Ha): There is a significant difference in the mean ResponseTime across different treats.
+
+```{r}
+pet_data <- read_excel("C:/Users/Praka/OneDrive/Documents/5thSem/DA/pet_training.xlsx")
+summary(pet_data)
+```
+
+```{r}
+boxplot(ResponseTime ~ Task, data = pet_data)
+```
+
+```{r}
+boxplot(ResponseTime ~ Treat, data = pet_data)
+```
+
+```{r}
+# ANOVA for Task
+task_anova <- aov(ResponseTime ~ Task, data = pet_data)
+summary(task_anova)
+```
+
+```{r}
+# ANOVA for Treat
+treat_anova <- aov(ResponseTime ~ Treat, data = pet_data)
+summary(treat_anova)
+```
+
+Here P value is below alpha which is 0.05 and Fstatistic(22.48)>Fcritical(3.101) Which indicates that there are significant differences. We can conclude the combination of different treats and tasks significantly influence the training time for pets.
+
+Problem 5:
+
+Does the choice of treats significantly impact the training time for different tasks? Which specific combinations of treats and tasks lead to the most significant differences in training time? (Note: Assume the significance level to be 0.05 )
+
+```{r}
+task_posthoc <- TukeyHSD(task_anova)
+print(task_posthoc)
+
+```
+
+```{r}
+treat_posthoc <- TukeyHSD(treat_anova)
+print(treat_posthoc)
+```
+
+
+Based on this post hoc analysis: Task B and Task D have the lowest average ResponseTime Treat III has the highest average ResponseTime,
+while Treat I and Treat II have similar and lower average ResponseTimes.
+
+In conclusion, Task B has the lowest average ResponseTime among the tasks, and Treat II has the lowest average ResponseTime among the
+treats
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

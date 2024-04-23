@@ -1,0 +1,255 @@
+---
+title: "PES2UG21CS315_Worksheet1_part2"
+author: "NAGAVENI_LG_PES2UG21CS315"
+date: "2023-09-05"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+library(readxl)
+
+
+# Read Excel file
+char_preds <- read_excel("C:/Users/Praka/OneDrive/Documents/5thSem/DA/road_accidents_india_2016.xlsx")
+
+ data <- read_excel("C:/Users/Praka/OneDrive/Documents/5thSem/DA/road_accidents_india_2016.xlsx")
+ str(data)
+```
+```{r}
+
+```
+
+Problem 1: 
+Find the total number of accidents in each state for the year 2016 and display your results. Make sure to display all rows while printing
+the dataframe. Print only the necessary columns. (Hint: use the grep command to help filter out column names).
+
+```{r}
+# Calculate the total accidents using backticks for column names with spaces/special characters
+data$Total_Accidents <- rowSums(data[, c("Fine/Clear - Total Accidents", 
+                                          "Mist/ Foggy - Total Accidents", 
+                                          "Cloudy - Total Accidents", 
+                                          "Rainy - Total Accidents", 
+                                          "Snowfall - Total Accidents", 
+                                          "Hail/Sleet - Total Accidents", 
+                                          "Dust Storm - Total Accidents", 
+                                          "Others - Total Accidents")])
+
+# Sort the data by Total_Accidents
+sorted_data <- data[order(data$Total_Accidents), ]
+
+# Print the State/UT and Total_Accidents columns
+print(sorted_data[, c("State/ UT", "Total_Accidents")])
+
+
+```
+Problem 2: Find the (fatality rate = total number of deaths/total number of accidents ) in each state. Find out if there is a significant linear
+correlation at a significance of α = 0.05 between the fatality rate of a state and the mist/foggy rate (fraction of total accidents that happen in
+mist/foggy conditions). Correlation between two continuous RVs: Pearson’s correlation coefficient. Pearson’s correlation coefficient between two
+RVs x and y is given by:
+
+ρ =[Covariance(x, y)]/[σx · σy]
+
+where: ρ represents the Pearson’s correlation coefficient Covariance(x, y) is the covariance between x and y σx is the standard deviation of x σy is
+the standard deviation of y. Plot the fatality rate against the mist/foggy rate. (Hint: use the ggscatter library to plot a scatterplot with the confidence interval of the correlation coefficient). Plot the fatality rate and mist/foggy rate (see this and this for R plot customization).
+```{r}
+# Check the column names of your dataset
+colnames(data)
+
+# Calculate the total deaths using the correct column names
+data$Total_Deaths <- rowSums(data[, c("Fine/Clear - Persons Killed", 
+                                      "Mist/ Foggy - Persons Killed", 
+                                      "Cloudy - Persons Killed", 
+                                      "Rainy - Persons Killed", 
+                                      "Snowfall - Persons Killed", 
+                                      "Hail/Sleet - Persons Killed", 
+                                      "Dust Storm - Persons Killed", 
+                                      "Others - Persons Killed")])
+
+# Calculate the total accidents using the correct column names
+data$Total_Accidents <- rowSums(data[, c("Fine/Clear - Total Accidents", 
+                                          "Mist/ Foggy - Total Accidents", 
+                                          "Cloudy - Total Accidents", 
+                                          "Rainy - Total Accidents", 
+                                          "Snowfall - Total Accidents", 
+                                          "Hail/Sleet - Total Accidents", 
+                                          "Dust Storm - Total Accidents", 
+                                          "Others - Total Accidents")])
+
+# Calculate the fatality rate
+data$Fatality_Rate <- data$Total_Deaths / data$Total_Accidents
+
+# Print the State/UT and Fatality_Rate columns
+print(data[, c("State/ UT", "Fatality_Rate")])
+
+
+```
+```{r}
+#Pearson's Correlation Coefficient
+# Pearson's Correlation Coefficient
+fatality_rate <- data$`Fine/Clear - Persons Killed` / data$`Fine/Clear - Total Accidents`
+mist_foggy_rate <- data$`Mist/ Foggy - Total Accidents` / data$`Fine/Clear - Total Accidents`
+correlation <- cor(fatality_rate, mist_foggy_rate)
+alpha <- 0.05
+n <- length(fatality_rate)
+critical_value <- qt(1 - alpha / 2, df = n - 2)
+
+if (abs(correlation) > critical_value / sqrt(n - 2)) {
+  significance <- "significant"
+} else {
+  significance <- "not significant"
+}
+
+cat("Pearson Correlation Coefficient:", correlation, "\n")
+cat("The correlation is", significance, "at alpha =", alpha, "\n")
+
+
+```
+```{r}
+
+
+```
+The Pearson's correlation coefficient, which is 0.307489, indicates a modest positive correlation between the fatality rate of a state and the mist/foggy rate. However, it's important to note that the result of the t-test shows that this correlation is not statistically significant at the 0.05 alpha level.
+
+Plot the fatality rate and mist/foggy rate
+```{r}
+library(ggplot2)
+plot_data <- data.frame(FatalityRate = fatality_rate, MistFoggyRate = mist_foggy_rate)
+
+scatterplot <- ggplot(plot_data, aes(x = MistFoggyRate, y = FatalityRate)) + geom_point() + labs(x = "Mist/Foggy Rate", y = "Fatality Rate") + ggtitle("Fatality Rate vs. Mist/Foggy Rate")
+
+print(scatterplot)
+```
+The graph illustrates a subtle positive relationship between the fatality rate and the mist/foggy rate, a correlation supported by the previously calculated Pearson Correlation Coefficient.
+
+Problem 3: Rank the states based on total accidents and total fatalities (give a rank of 1 to the state that has the highest value of a property). You are free to use any tie-breaking method for assigning ranks. Find the Spearman-Rank correlation coefficient between the two rank columns and determine if there is any statistical significance at a significance level of α = 0.05. Also test the hypothesis that the correlation coefficient is at least
+0.2.
+
+t = (rs − ρs)/sqrt((1−rs^(2))/(n-2))
+where: • t represents the t-statistic, • rs is the Spearman-Rank correlation coefficient, • ρs value of the population correlation coefficient being tested against, • n is the number of data points in the sample.
+```{r}
+library(dplyr)
+
+```
+
+```{r}
+# H0: There is no correlation between total accidents and total fatalities
+# H1: There is a correlation between total accidents and total fatalities
+
+# Calculate ranks for total accidents and total fatalities in descending order
+accident_ranks <- rank(-data$`Fine/Clear - Total Accidents`)  # Use backticks for column names
+fatality_ranks <- rank(-data$`Fine/Clear - Persons Killed`)    # Use backticks for column names
+
+# Calculate Spearman Rank Correlation Coefficient
+spearman_corr <- cor(accident_ranks, fatality_ranks, method = "spearman")
+
+alpha <- 0.05
+n <- length(accident_ranks)
+critical_value <- qt(1 - alpha / 2, df = n - 2)
+
+if (abs(spearman_corr) > critical_value / sqrt(n - 2)) {
+  significance <- "significant"
+} else {
+  significance <- "not significant"
+}
+
+# Perform a hypothesis test (correlation >= 0.2)
+hypothesis_test <- spearman_corr >= 0.2
+
+cat("Spearman Rank Correlation Coefficient:", spearman_corr, "\n")
+cat("The correlation is", significance, "at alpha =", alpha, "\n")
+cat("Hypothesis test (correlation >= 0.2):", hypothesis_test, "\n")
+
+```
+```{r}
+
+
+```
+The Spearman Correlation method is specifically designed for use with ordinal data. To accommodate this, we've ranked both the total accident and total fatality figures in descending order. The resulting Spearman coefficient, measuring at 0.9649936, indicates an extremely robust positive relationship between the total accident count and total fatalities. Notably, our hypothesis test at a significance level of 0.05 confirms that this correlation holds statistical significance. Furthermore, the hypothesis test examining a correlation of at least 0.2 validates that the observed correlation between total accidents and total fatalities surpasses or equals the threshold of 0.2.
+
+
+##Problem 4
+Convert the column Hail.Sleet. . . Total.Accidents to a binary column as follows. If a hail/sleet accident has occurred in a state, give that state a value of 1. Otherwise, give it a value of 0. Once converted, find out if there is a significant correlation between the hail_accident_occcur binary column created and the number of rainy total accidents for every state.
+Calculate the point bi-serial correlation coefficient between the two columns. (Hint: it is equivalent to calculating the Pearson correlation between a continuous and a dichotomous variable. You could also use the ltm package’s biserial.cor function).''
+```{r}
+
+library(ltm)
+
+# Create a binary variable indicating if hail/sleet accidents occurred
+data$Hail_Accident_Occur <- ifelse(data$`Hail/Sleet - Total Accidents` > 0, 1, 0)
+
+# Calculate biserial correlation
+correlation <- biserial.cor(data$`Rainy - Total Accidents`, data$Hail_Accident_Occur)
+
+# Print the correlation coefficient
+print(correlation)
+
+```
+
+The point bi-serial correlation method is used to assess the relationship between a continuous variable and a binary (dichotomous) variable. To facilitate this analysis, we converted the "Hail.Sleet...Total.Accidents" column into binary values.
+
+The calculated point bi-serial correlation coefficient, which stands at -0.1429725, suggests a slight negative correlation between hail accidents and the total number of rainy accidents.
+
+##Problem 5
+Similar to in Problem 4, create a binary column to represent whether a dust storm accident has occurred in a state (1 = occurred, 0 = not occurred). Convert the two columns into a contingency table. Calculate the phi coefficient of the two tables. (Hint: use the psych package).
+```{r}
+library(psych)
+
+
+
+data$DustStormOccurred <- ifelse(data$`Dust Storm - Total Accidents` > 0, 1, 0)
+data$HailSleetOccurred <- ifelse(data$`Hail/Sleet - Total Accidents` > 0, 1, 0)
+
+contingency_table <- table(data$DustStormOccurred, data$HailSleetOccurred)
+print(contingency_table)
+
+phi_coefficient <- phi(contingency_table)
+cat("Phi Coefficient:", phi_coefficient, "\n")
+
+```
+The Phi correlation method is applicable exclusively to binary data, so we transformed the columns into binary format. The computed phi coefficient, registering at 0.62, indicates a robust positive relationship between the two variables. In essence, it suggests that dust storms and hail/sleet events are highly likely to co-occur.
+
+##Problem 6
+Analyze the effect of sample size on correlation coefficients and spurious correlation. Are correlation coefficients affected by outliers ?
+
+ANSWER- 
+The size of the sample undeniably impacts the correlation coefficients. A larger sample size tends to enhance stability and reliability by offering more comprehensive insights into the relationships among variables. Conversely, a smaller sample may not accurately represent the entire population, resulting in less dependable correlation estimates susceptible to random fluctuations.
+
+Nonetheless, it's essential to note that larger sample sizes don't inherently safeguard against the discovery of coincidental correlations. In extensive datasets, there's a possibility of identifying statistically significant correlations between variables that lack a genuine connection. Therefore, the consideration of hidden variables and domain knowledge remains equally vital.
+
+Correlation coefficients are notably sensitive to outliers. The presence of an outlier can either diminish or magnify the correlation between variables, depending on its placement relative to other data points. Hence, thorough data cleaning is of paramount importance before delving into result analysis.
+
+
+##Problem 7
+Look at these plots and answer What problems do they have? How do they affect correlation analysis?
+
+ANSWER- 
+1. These three plots illustrate instances of spurious correlations, where one variable appears to exhibit a strong statistical relationship with another, despite lacking a practical connection. This phenomenon primarily arises from the presence of concealed or hidden variables. It underscores the critical importance of incorporating domain expertise and applying appropriate statistical methods to account for these hidden variables before drawing definitive conclusions.
+
+2. The graph portrays a robust positive correlation between eBay's total gross merchandise volume (GMV) and total "Black Friday" online revenue. It suggests that eBay tends to observe higher GMV on Black Friday in comparison to other days. This observation could indicate that consumers are more active and engage in more transactions on eBay during Black Friday, contributing to increased revenue. However, it's crucial to note that correlation does not imply causation. It's not necessarily the case that eBay's GMV directly causes an upswing in Black Friday revenue or vice versa. Other unaccounted factors, represented as hidden variables, may also be influencing this correlation.
+

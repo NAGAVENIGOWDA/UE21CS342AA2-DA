@@ -1,0 +1,313 @@
+---
+title: "PES2UG21CS315_2B"
+author: "NAGAVENI_LG_PES2UG21CS315"
+date: "2023-09-20"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+# Welcome to INADA Ports
+
+Welcome back to your second assignment at the Bangalore Consulting group.
+
+Maritime transport handles 95% of India's trade in volume terms and 70% in value terms and is growing twice as fast at the global maritime trade. The government, therefore, is really pushing hard to give this industry a boost by providing fiscal and non-fiscal initiatives to enterprises to develop and maintain India's coastline. Over 150 initiatives are currently being implemented.
+
+An important part of any coastline development, is the development of breakwaters. A breakwater is a structure built in bodies of water to provide protection and control against the impacts of waves, currents, and tides. It is designed to reduce the energy of incoming waves and create calmer waters behind it.
+
+This allows all kinds of economic activity to occur along the coasts. It enables constructions of ports, recreational areas, protect beach ecosystems etc. A prime example of this would be the tetrapods you see along the Marine Drive in Mumbai.
+
+![Image sourced from [www.townmumbai.com](https://www.townmumbai.com/8-amazing-places-visit-food-eat-mumbai-monsoon/)](./Breakwater.png){width="50%"}
+
+INADA Ports is the largest operator of ports in India. They are constructing a port along the Western Coast and need your help before they can start building it.
+
+Wave height in a particular region is an important parameter to be considered before construction of a port. There is some historical data available about the climatic conditions prevailing in the region and the height of the waves. Your task is to build a model that can accurately predict the wave height, given these same climatic conditions.
+
+# Overfitting and Regularization
+
+In the realm of predictive modeling, the pursuit of creating a model that perfectly fits the training data can inadvertently lead to a phenomenon known as overfitting. Overfitting occurs when a model becomes excessively complex, capturing not only the genuine patterns within the data but also the noise and random fluctuations present in the training set. 
+
+The hyper-adaptation to the training data renders the model less capable of generalizing to new, unseen data, as it effectively memorizes the training examples rather than discerning meaningful relationships. As a result, an overfitted model may exhibit impressive performance on the training data but performs poorly when faced with real-world scenarios. The delicate balance between capturing essential patterns and avoiding the trap of overfitting underscores the importance of techniques like regularization, which aim to ensure model generalization by restraining excessive complexity.
+
+There are three Regularization techniques we will be dealing with, all of which use the idea of penalizing terms to tackle overfitting.
+
+But before we go any further, let's have a look at the data.
+
+**Data Dictionary**
+
+    hh: Hour
+    WDIR: Wind Direction measured in degrees
+    WSPD: Wind Speed measures in metres/second
+    GST: Gust speed measures in metres/second
+    DPD: Dominant Wave period measures in seconds
+    APD: Average Wave period measures in seconds
+    MWD: Mean Wind Direction measured in degrees
+    PRES: Pressure measured in hectopascal
+    ATMP: Atmosphere temperature measured in degrees Celsius
+    WTMP: Water temperature measured in degrees Celsius
+    DEWP: Dew Point measured in degrees Celsius
+    WVHT: Significant Wave Height measured in metres. This the variable we will be predicting
+
+***
+
+## Visualizing the data
+
+Let's visualize this all in the form of a Data Frame
+
+```{r}
+data <- read.csv('waves.csv')
+# head(data)
+summary(data)
+```
+(Ask yourselves, is there merit to thinking of this problem as a time series problem given the distinctly seasonal behaviour of water bodies?)
+
+
+In this worksheet, we will train the model on 80% and test it on the remaining 20%
+Therefore, before we build any models, split the data into the Training and testing split
+
+
+
+```{r}
+# Split the data into training and testing sets using the indices (first 80% for training and next 20% for test)
+set.seed(123)
+percentage <- 0.8
+rows <- nrow(data)
+numeric_train <- round(percentage * rows) 
+num_test <- rows - numeric_train
+train_index <- sample(1:rows, numeric_train) 
+test_index <- setdiff(1:rows, train_index) 
+train_data <- data[train_index, ]
+test_data <- data[test_index, ]
+```
+
+***
+
+## Correlation plot
+
+You may recall that in the previous worksheet, in the last section with Multiple Linear Regression, we created a correlogram and conducted a fairly informal visual analysis to select the most important factors. Regularization in some ways is a formalization of this same process, where instead of conducting a visual analysis, we have a mathematical basis for selecting(or not selecting or penalizing) certain parameters.
+
+So to form a baseline, let's create a correlogram and repeat our visual analysis process and create a first version of our predictor, an MLR model
+
+```{r}
+# Load required libraries
+library(corrplot)
+library(ggplot2)
+
+correlation_matrix <- cor(train_data)
+corrplot(correlation_matrix, method = "color", type = "upper",
+         tl.col = "blue", tl.srt = 40, diag = FALSE)
+```
+Now let's pick the visually best looking parameters for our model
+
+```{r}
+WVHT_correlation <- correlation_matrix[,"WVHT"] 
+correlation_sort <- sort(WVHT_correlation, decreasing = TRUE) 
+top_6 <- names(correlation_sort[2:10]) 
+cat(top_6)
+# Create the MLR model with the most suitable parameters (There seem to be 4 right? Or is it 6?)
+model <- lm(WVHT ~ APD + DPD + GST + WSPD, data = train_data) 
+summary(model)
+```
+Print the R-squared statistic of this model based on its fit over the testing data. (Hint: Recall the value of R-squared statistic as 1 - RSS/TSS)
+
+```{r}
+# Write your code here
+data_df <- data.frame(matrix(ncol = 0, nrow = 777))
+predicted_values <- predict(model, newdata = test_data)
+residuals <- test_data$WVHT - predicted_values
+residual_sum_of_squares <- sum(residuals^2)
+mean_WVHT <- mean(test_data$WVHT)
+deviations_from_mean <- test_data$WVHT - mean_WVHT
+total_sum_of_squares <- sum(deviations_from_mean^2)
+R_squared <- 1 - (residual_sum_of_squares / total_sum_of_squares)
+cat("R-squared (R2) statistic:", R_squared, "\n")
+
+```
+***
+
+## Ridge Regression
+
+Ridge regression is a linear regression technique that incorporates L2 regularization to address issues in predictive modeling (overfitting, multi-colinearity etc). 
+
+Linear regression, aims to minimize the sum of squared residuals whereas Ridge regression introduces a penalty term proportional to the square of the magnitude of the coefficients. This penalty, controlled by a hyperparameter (often denoted as lambda), discourages large coefficient values, effectively constraining the model's complexity, enhancing its stability and generalization performance.
+
+Perform Ridge Regression on the training data and compare the predictions with the test data to check for the fit of the model. (Hint: Use the glmnet library)
+
+```{r}
+# Write your code here
+library(glmnet)
+X_train_data <- as.matrix(train_data[, c("APD", "DPD", "GST", "WSPD")]) 
+y_train_data <- train_data$WVHT
+ridge_regression_model <- glmnet(X_train_data, y_train_data, alpha = 0, lambda = 0.5)
+coef(ridge_regression_model)
+X_test_data <- as.matrix(test_data[, c("APD", "DPD", "GST", "WSPD")]) 
+predictions <- predict(ridge_regression_model,s = 0.01, newx = X_test_data)
+```
+Print the R-squared statistic. Does the model seem to be fitting well?
+```{r}
+# Calculate R^2 here
+X_test_data<- as.matrix(test_data[, c("APD", "DPD", "GST", "WSPD")]) 
+predicted_values <- predict(ridge_regression_model,s = 0.01, newx = X_test_data)
+
+actual_values <- test_data$WVHT
+mse <- mean((actual_values - predicted_values)^2)
+rmse <- sqrt(mse)
+ss_total <- sum((actual_values - mean(actual_values))^2) 
+ss_residual <- sum((actual_values - predictions)^2) 
+r_squared <- 1 - (ss_residual / ss_total)
+cat("R-squared (R2):", r_squared, "\n")
+```
+What was your lambda? Is it possible for you to somehow conduct hyperparameter tuning and find the best lambda value for the Ridge Regression model? (Hint: use the cv.glmnet function)
+
+```{r}
+# Write your code here
+lambda_values <- 10^seq(3, -2, length = 100)
+cv_model <- cv.glmnet(X_train_data, y_train_data, alpha = 0, lambda = lambda_values) 
+optimal_lambda <- cv_model$lambda.min
+cat("Optimal Lambda:", optimal_lambda, "\n")
+
+```
+With the optimal lambda, build the model again and print the coefficients of the various dependent variables. Compare this to coefficients with models that had a higher or lower value of lambda. What can you comment about the relationship between lambda and the strength of regularization?
+
+```{r}
+# Write your code here
+newridge_model <- glmnet(X_train_data, y_train_data, alpha = 0, lambda = optimal_lambda) 
+coef(newridge_model)
+```
+
+What can you comment about the R-squared statistic value of the best model? Is it higher or lower than in the case of MLR?
+
+Multiple Linear Regression model (MLR) R2: 0.9129339 
+Best Ridge Regression model R2: 0.7752268 
+The Multiple Linear Regression (MLR) model has a higher R-squared value of 0.9129339 . This indicates that the MLR model explains a larger proportion of the variance in the target variable, suggesting a strong fit between the independent variables and the target.
+The best Ridge Regression model achieved an R-squared value of 0.8882, which is slightly lower than the MLR model. This suggests that the Ridge Regression model, while still explaining a substantial portion of the variance, is penalized for its coefficients, resulting in a slightly reduced explanatory power compared to the MLR model.
+
+
+Is a higher R-squared statistic always the better model?
+
+Having a higher R-squared (R^2) statistic doesn't always mean you have a better model. A model with an exceptionally high R^2 on the training data could be a sign of overfitting. This means the model might be fitting to the quirks and noise in the training data rather than capturing the genuine underlying patterns. Such a model may not perform well when applied to new, unseen data.
+
+
+What can be done to specifically improve R-squared value for this Ridge Regression model? (Think about the transformations you can do to the data)
+
+Modify current characters to enhance their ability to depict the inherent patterns within the dataset. Selecting the most appropriate transformation techniques should be influenced by your understanding of the subject matter, thorough data exploration, and practical experimentation.
+
+For instance, consider applying logarithmic transformations to predictor or target variables when they display exponential relationships. Such transformations can make the data more linear, rendering it a better fit for linear regression methods such as Ridge Regression.
+
+Regarding feature scaling, even though Ridge Regression is less affected by variations in feature scales, standardizing the features to have an average of zero and a standard deviation of one can, on occasion, enhance convergence and model performance
+***
+
+
+## Lasso Regression
+
+Lasso regression is similar to Ridge Regression except that instead of L2 regularization, it employs L1 regularization to address the very same issues that Ridge Regression addresses. 
+
+There are however, a couple of differences between the two. The first and most obvious being that since Lasso Regression implements L1 regularization, the penalty term in this case is proportional to the absolute value of the coefficient. 
+
+Another point to note is that unlike its Ridge counterpart, Lasso Regression can push some coefficients to exactly 0. This effectively drops the feature from the predictive model (Similar to how we drop values through visual analysis). Lasso Regression can thus be used effectively for Feature Selection as well.
+
+The goal here too however is to improve model stability and generalization.
+
+Write code to build a Lasso Regression model similar to how you built the Ridge Regression model. This time incorporate hyperparameter tuning right away. So first print the optimal lambda value.
+
+```{r}
+# Write your code here
+
+lambda_values <- 10^seq(2, -4, length = 1000)
+cv_model <- cv.glmnet(X_train_data, y_train_data, alpha = 0, lambda = lambda_values) 
+optimal_lambda <- cv_model$lambda.min
+cat("Optimal Lambda:", optimal_lambda, "\n")
+
+
+```
+
+Display the coefficients of all the variables. Do you notice some variables being dropped out? Which ones are they?
+
+```{r}
+# Write your code here
+lasso_regression_model <- glmnet(x = as.matrix(train_data[, -12]), y = train_data$WVHT, alpha = 1, lambda = 0.001, standardize = TRUE)
+
+coef(lasso_regression_model, s = 0.001)
+```
+WTMP has been dropped
+Let us conclude this one by finding the R-squared statistic for the Lasso Model.
+
+```{r}
+#Write your code here
+model_df <- data.frame(predicted_lasso = numeric(nrow(test_data)))
+model_df$predicted_lasso <- predict(lasso_regression_model, newx = as.matrix(subset(test_data, select = -c(WVHT))))
+mean_observed <- mean(test_data$WVHT)
+tss <- sum((test_data$WVHT - mean_observed)^2)
+rss <- sum((model_df$predicted_lasso - test_data$WVHT)^2)
+r2 <- 1 - (rss / tss)
+cat("The predicted r2 value for lasso regression is:", r2, "\n")
+
+```
+
+
+***
+
+## Elastic Net Regression
+
+Elastic Net regression, an advanced form of linear regression, combines the benefits of L1 (Lasso) and L2 (Ridge) regularization methods. By integrating both penalty terms, Elastic Net overcomes the limitations of each, offering resilience against multicollinearity, aiding feature selection, and preventing overfitting. 
+
+This approach makes Elastic Net a very versatile approach for achieving accurate and efficient models by finding a middle ground between dropping parameters and retaining important predictors. 
+
+Build your Elastic Net Regression model incorporating all the steps we previously followed for ridge and lasso regression. (Play around with the alpha value and find out how it affects the model)
+
+```{r}
+# Write your code here
+library(caret)
+set.seed(12)
+custom <- trainControl(method = "repeatedcv",
+
+                       number = 3,
+
+                       repeats = 5,
+
+                       verboseIter = FALSE)
+elasticnet <- train(WVHT~.,
+            train_data,
+            method='glmnet',
+            tuneGrid =expand.grid(alpha=seq(0,1,length=10),
+                                  lambda = seq(0.001,0.2,length=10)),
+            trControl=custom)
+coef(elasticnet$finalModel, elasticnet$finalModel$lambdaOpt)
+
+```
+```{r}
+model_df$predicted_elasticnet <- predict(elasticnet, newdata = test_data)
+mean_observed <- mean(test_data$WVHT)
+tss <- sum((test_data$WVHT - mean_observed)^2)
+rss <- sum((model_df$predicted_elasticnet - test_data$WVHT)^2)
+r2 <- 1-(rss/tss)
+cat("The predicted r2 value for ridge regression is:",r2)
+
+alpha_value <- elasticnet$bestTune$alpha
+
+# Access the lambda value (regularization strength)
+lambda_value <- elasticnet$bestTune$lambda
+
+# Print the values
+cat("\n")
+cat("Alpha Value:", alpha_value, "\n")
+cat("Lambda Value:", lambda_value, "\n")
+
+```
+
+What can you comment about the coefficients of this model? Is it a simple average of Ridge and Lasso Regression? Or does it vary too? What does that tell you about the number of hyperparameters in Elastic Net Regression compared to the other two models?
+
+ANS:
+
+The predicted r2 value for ridge regression is: 0.9135803
+Alpha Value: 0.2222222 
+Lambda Value: 0.001 
+
+
+No its not just an average of the coefficients it combines their characteristics by introducing an additional hyperparameter (alpha) that controls the trade-off between L1 and L2 regularization
+Elastic Net Regression has more hyperparameters to consider when finding the optimal model(alpha and lambda, while alpha is set 0 or 1 depending ridge and lasso regression)
+The variation in alpha allows you to fine-tune the model’s behavior and feature selec- tion capabilities. It’s a more flexible approach but comes with the challenge of tuning two hyperparameters.
+
+***
+
+Amazing work with the analysis. Along with Linear Regression models you now have added Regularization techniques to your repertoire. With each assignment you're making significant progress on your Data Analtyics Journey. So, until the next case comes up, Happy Learning!

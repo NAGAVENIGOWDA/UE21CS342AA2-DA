@@ -1,0 +1,294 @@
+---
+title: "PES2UG21CS315_Worksheet1_Part1"
+author: "NAGAVENI_LG_PES2UG21CS315"
+date: "2023-08-31"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+```{r}
+getwd()
+```
+
+
+```{r}
+library(readxl)
+
+
+# Read Excel file
+data <- read_excel("C:/Users/Praka/OneDrive/Documents/5thSem/DA/moviedataset.xlsx")
+
+```
+Note that the echo = FALSE parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+Problem 1: Get the summary statistics (mean, median, min, max, 1st quartile, 3rd quartile and standard deviation). Calculate these only for the
+numerical columns. What can you determine from the summary statistics? What summary statistics can be useful for categorical columns? Classify
+all the variables/columns into their types of data attributes (nominal, ordinal, interval, ratio).
+
+Summary:
+
+```{r}
+summary(data)
+
+```
+
+
+Numerical columns summary:
+
+```{r}
+numerical_columns <- c("budget", "popularity", "revenue", "runtime", "vote_average", "vote_count")
+summary_stats <- data.frame(
+ Mean = sapply(data[numerical_columns], mean),
+ Median = sapply(data[numerical_columns],median),
+ Min = sapply(data[numerical_columns], min),
+ Max = sapply(data[numerical_columns], max),
+ Q1 = sapply(data[numerical_columns], quantile, probs = 0.25),
+ Q3 = sapply(data[numerical_columns], quantile, probs = 0.75),
+ SD = sapply(data[numerical_columns], sd)
+)
+print(summary_stats)
+```
+These summary statistics provide insights into central tendency, spread, and distribution of the data for each numerical variable. They can help you
+understand the general characteristics of the dataset and identify potential outliers or patterns.
+
+The statistics can be useful for categorical columns are:Frequency Counts, Mode,Percentage/Proportion,Bar Plot,Cross-Tabulation,Chi-Square
+Test,Entropy or Gini Index and Cluster Analysis.
+
+Classification of each column into its data attribute type: 1)budget: Ratio
+2)genres: Nominal 3)id: Nominal 4)original_language: Nominal 5)popularity: Ratio or Interval 6)release_date: Interval 7)revenue: Ratio 8)runtime:
+Ratio or Interval 9)title: Nominal 10)vote_average: Interval or Ratio 11)vote_count: Ratio 12)director: Nominal
+
+Problem 2:
+Investigate the data set for missing values. Also classify the missingness as MCAR, MAR or MNAR. Recommend ways to replace missing values
+in the dataset and apply them for revenue, budget and runtime columns. Hint: Make sure to capture data from both, missing values in numeric
+fields and empty strings in descriptive fields. Convert all missing placeholders to type NA. Look at the distribution of the dataset to classify the type of missing values.
+
+```{r}
+library(ggplot2)
+
+# Replace empty strings with NA
+data[data == ""] <- NA
+
+# Loop through columns
+for (col in colnames(data)) {
+  if (is.numeric(data[[col]])) {
+    # Replace 0s with NA, including handling missing values
+    data[[col]][data[[col]] == 0] <- NA
+  }
+}
+
+# Calculate missing counts and percentages
+missing_counts <- colSums(is.na(data))
+missing_percent <- missing_counts / nrow(data) * 100
+
+# Create a data frame to store missing info
+missing_info <- data.frame(Column = names(missing_counts), MissingCount = missing_counts, MissingPercent = missing_percent)
+
+# Print the missing info
+print(missing_info)
+
+```
+```{r}
+missing_info <- data.frame(
+ Column = c("budget", "genres", "id", "original_language", "popularity", "release_date", "revenue", "runtime", 
+"title", "vote_average", "vote_count", "director"),
+ MissingCount = c(599, 28, 0, 0, 1, 1, 778, 37, 0, 63, 62, 36),
+ MissingPercent = c(14.82306360, 0.69289780, 0.00000000, 0.00000000, 0.02474635, 0.02474635, 19.25266023, 0.91561495, 0.00000000, 1.55902004, 1.53427369, 0.89086860)
+)
+median_missing_percent <- median(missing_info$MissingPercent)
+mean_missing_percent <- mean(missing_info$MissingPercent)
+if (median_missing_percent == 0) {
+ missingness_classification <- "MCAR"
+} else if (median_missing_percent > 0 && median_missing_percent <= mean_missing_percent) {
+ missingness_classification <- "MAR"
+} else {
+ missingness_classification <- "MNAR"
+}
+cat("Missingness is classified as:", missingness_classification)
+```
+Ways to replace missing values in the dataset and apply them for revenue, budget and runtime columns:Mean or Median Imputation,Regression
+Imputation,K-Nearest Neighbors Imputation.
+
+```{r}
+# Median imputation
+data$revenue[is.na(data$revenue)] <- median(data$revenue, na.rm = TRUE)
+data$budget[is.na(data$budget)] <- median(data$budget, na.rm = TRUE)
+data$runtime[is.na(data$runtime)] <- median(data$runtime, na.rm = TRUE)
+missing_counts <- colSums(is.na(data))
+missing_percent <- missing_counts / nrow(data) * 100
+missing_info <- data.frame(Column = names(missing_counts), MissingCount = missing_counts, MissingPercent = missing_percent)
+print(missing_info)
+
+```
+```{r}
+
+```
+
+Problem 3:
+Analyze the spread of the data set along years. How number of movie releases have changed over the years ?
+
+```{r}
+data$release_date <- as.Date(data$release_date,format = "%Y-%m-%d")
+data$release_year <- lubridate::year(data$release_date)
+release_counts <- table(data$release_year)
+plot(release_counts, type = "l", xlab = "Year", ylab = "Number of Movie Releases", main = "Number of Movie Releas
+es Over Years")
+
+
+
+```
+```{r}
+barplot(release_counts, xlab = "Year", ylab = "Number of Movie Releases", main = "Number of Movie Releases Over Y
+ears")
+```
+```{r}
+
+```
+
+Problem 4:
+Create a horizontal box plot using the column “runtime”. What inferences can you make from this box and whisker plot? Comment on the skew of
+the runtime field (visual inspection is enough).
+
+```{r}
+ggplot(data, aes(x = runtime)) +
+ geom_boxplot() +
+ labs(x = "Runtime")
+```
+From the boxplot we can tell that runtime is positively skewed.
+
+Problem 5:
+
+Analyze the top 20 titles with highest budget, revenue and ROI. Plot a horizontal bar graph for all three metrics in each case. What analysis can
+you make by looking at these graphs? What kind of movies attracts the highest investments and do they promise a better ROI ?
+
+```{r}
+data$roi <- (data$revenue - data$budget) / data$budget
+# Sort data by budget, revenue, and ROI
+top_budget <- head(data[order(-data$budget), ], 20)
+top_revenue <- head(data[order(-data$revenue), ], 20)
+top_roi <- head(data[order(-data$roi), ], 20)
+plot_horizontal_bar <- function(df, x_col, y_col, title) {
+ df <- df[order(-df[[x_col]]), ] # Reorder the data frame
+ ggplot(df, aes(x = !!sym(x_col), y = reorder(!!sym(y_col), -!!sym(x_col)))) +
+ geom_bar(stat = "identity", fill = "dodgerblue") +
+ labs(x = x_col, y = y_col, title = title) +
+ theme_minimal() 
+}
+# Plot horizontal bar graphs
+plot_budget <- plot_horizontal_bar(top_budget, x_col = "budget", y_col = "title", title = "Top 20 Titles by Budge
+t")
+plot_revenue <- plot_horizontal_bar(top_revenue, x_col = "revenue", y_col = "title", title = "Top 20 Titles by Re
+venue")
+plot_roi <- plot_horizontal_bar(top_roi, x_col = "roi", y_col = "title", title = "Top 20 Titles by ROI")
+# Display the bar graphs
+print(plot_budget)
+```
+```{r}
+print(plot_roi)
+```
+
+```{r}
+print(plot_revenue)
+```
+
+The top budget titles may not always guarantee the highest revenue or ROI. While high budgets can contribute to impressive visuals and
+production quality, the overall success of a movie depends on multiple factors.
+
+The movies with high revenue are likely to include well-established franchises, popular characters, and successful adaptations that attract large audiences.
+
+High ROI movies demonstrate that a well-crafted story, creative marketing, and audience engagement can result in significant profits even with
+limited resources.
+
+Movies with higher investment do not necessarily have to have higher ROI.
+
+Problem 6:
+
+Put yourself in the shoes of a production house. You want to produce the next big blockbuster. Plot the ROI, revenue and budget across genres to
+finalize the genre of your upcoming movie as you did in the previous problem. Elaborate your answers with proper explanation. Since one movie
+can fall in multiple genre categories, you are free to choose a combination. You can also understand how the popularity of different genres have changed along the years. Do provide a nice name to your movie and your dream cast ;)
+
+```{r}
+# Convert the space-separated string of genres to a list of genres for each movie
+data$genres <- strsplit(data$genres, " ")
+# Extract the individual genres and count their occurrences
+label_counts <- table(unlist(data$genres)) # label_counts will be a data frame with "Var1" and "Freq" columns
+# Sort the counts in descending order
+label_counts <- sort(label_counts, decreasing = TRUE)
+data$roi <- (data$revenue - data$budget) / data$budget
+# Create scatter plots for ROI vs Revenue and Budget vs Revenue
+scatter_roi <- ggplot(data, aes(x = roi, y = revenue)) +
+ geom_point(alpha = 0.7) +
+ labs(x = "ROI", y = "Revenue", title = "ROI vs Revenue") +
+ theme_minimal()
+scatter_budget <- ggplot(data, aes(x = budget, y = revenue)) +
+ geom_point(alpha = 0.7) +
+ labs(x = "Budget", y = "Revenue", title = "Budget vs Revenue") +
+ theme_minimal()
+# Display scatter plots
+print(scatter_roi)
+```
+
+```{r}
+print(scatter_budget)
+```
+
+Based on the given information with respect to roi are horror and dramas which will produce maximum value of production and are prefered the
+evolving of movies have gone from more of romcom family dramas to more scifi high cost valuation movies.
+
+A movie that I would like to make right now would be “Quiet Place” cast would be John Krasinski and Emily Blunt, the director Christopher Nolan
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
